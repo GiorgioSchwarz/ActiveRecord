@@ -5,21 +5,21 @@ namespace MolnApps\ActiveRecord;
 use \MolnApps\ActiveRecord\Contracts\Model;
 use \MolnApps\ActiveRecord\Contracts\ModelMap;
 
-use \MolnApps\Repository\Contracts\Model as RepositoryModel;
+use \MolnApps\Repository\Contracts\Model as ConcreteModel;
 
 class BaseModelTest extends \PHPUnit_Framework_TestCase
 {
-	private $repositoryModel;
+	private $concreteModel;
 	private $modelMap;
 
 	private $model;
 
 	protected function setUp()
 	{
-		$this->repositoryModel = $this->createMock(RepositoryModel::class);
+		$this->concreteModel = $this->createMock(ConcreteModel::class);
 		$this->modelMap = $this->createMock(ModelMap::class);
 
-		$this->model = new BaseModel($this->repositoryModel, $this->modelMap);
+		$this->model = new BaseModel($this->concreteModel, $this->modelMap);
 	}
 
 	/** @test */
@@ -37,8 +37,8 @@ class BaseModelTest extends \PHPUnit_Framework_TestCase
 	/** @test */
 	public function it_returns_repository_model()
 	{
-		$this->assertInstanceOf(RepositoryModel::class, $this->model->getModel());
-		$this->assertEquals($this->repositoryModel, $this->model->getModel());
+		$this->assertInstanceOf(ConcreteModel::class, $this->model->getModel());
+		$this->assertEquals($this->concreteModel, $this->model->getModel());
 	}
 
 	/** @test */
@@ -250,13 +250,13 @@ class BaseModelTest extends \PHPUnit_Framework_TestCase
 
 	private function modelIsNew($bool = true)
 	{
-		$this->repositoryModel->method('isNew')->willReturn($bool);
+		$this->concreteModel->method('isNew')->willReturn($bool);
 	}
 
 	private function modelExpectsTimestamp($key, $timestamp = true)
 	{
 		$timestamp = ($timestamp === true) ? $this->getTimestamp() : $timestamp;
-		$this->repositoryModel
+		$this->concreteModel
 			->expects($this->once())
 			->method('setAssignment')
 			->with($key, $timestamp);
@@ -264,7 +264,7 @@ class BaseModelTest extends \PHPUnit_Framework_TestCase
 
 	private function modelExpectsNoTimestamp()
 	{
-		$this->repositoryModel
+		$this->concreteModel
 			->expects($this->never())
 			->method('setAssignment');
 	}

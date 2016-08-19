@@ -5,15 +5,14 @@ namespace MolnApps\ActiveRecord;
 use \MolnApps\ActiveRecord\Contracts\ActiveRecord as ActiveRecordInterface;
 
 use \MolnApps\ActiveRecord\Contracts\Model;
-use \MolnApps\ActiveRecord\Contracts\ModelMap;
-use \MolnApps\ActiveRecord\Contracts\RepositoryAdapter;
+use \MolnApps\ActiveRecord\Contracts\Repository;
 
 class ActiveRecord
 {
 	private $model;
 	private $repository;
 
-	public function __construct(Model $model, RepositoryAdapter $repository)
+	public function __construct(Model $model, Repository $repository)
 	{
 		$this->model = $model;
 		$this->repository = $repository;

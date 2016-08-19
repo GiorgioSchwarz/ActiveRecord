@@ -5,7 +5,7 @@ namespace MolnApps\ActiveRecord;
 use \MolnApps\ActiveRecord\Contracts\Model;
 use \MolnApps\ActiveRecord\Contracts\ResultSet;
 use \MolnApps\ActiveRecord\Contracts\ActiveRecord as ActiveRecordInterface;
-use \MolnApps\ActiveRecord\Contracts\RepositoryAdapter;
+use \MolnApps\ActiveRecord\Contracts\Repository;
 
 class ActiveRecordTest extends \PHPUnit_Framework_TestCase
 {
@@ -20,7 +20,7 @@ class ActiveRecordTest extends \PHPUnit_Framework_TestCase
 	protected function setUp()
 	{
 		$this->model = $this->createMock(Model::class);
-		$this->repository = $this->createMock(RepositoryAdapter::class);
+		$this->repository = $this->createMock(Repository::class);
 
 		$this->activeRecordModel = $this->createMock(ActiveRecordInterface::class);
 		$this->resultSet = $this->createMock(ResultSet::class);

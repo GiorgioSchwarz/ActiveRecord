@@ -2,19 +2,19 @@
 
 namespace MolnApps\ActiveRecord;
 
-use \MolnApps\ActiveRecord\Contracts\RepositoryAdapter;
+use \MolnApps\ActiveRecord\Contracts\Repository;
 use \MolnApps\ActiveRecord\Contracts\Model;
 use \MolnApps\ActiveRecord\Contracts\ModelMap;
 use \MolnApps\ActiveRecord\Contracts\ResultSet;
 
-use \MolnApps\Repository\Repository;
+use \MolnApps\Repository\Repository as RepositoryImplementation;
 
-class BaseRepository implements RepositoryAdapter
+class BaseRepository implements Repository
 {
 	private $repository;
 	private $modelMap;
 
-	public function __construct(Repository $repository, ModelMap $modelMap)
+	public function __construct(RepositoryImplementation $repository, ModelMap $modelMap)
 	{
 		$this->repository = $repository;
 		$this->modelMap = $modelMap;
@@ -27,12 +27,28 @@ class BaseRepository implements RepositoryAdapter
 
 	public function save(Model $model)
 	{
+		$this->guardModelImplementation($model);
+
 		$this->repository->save($model->getModel());
 	}
 
 	public function delete(Model $model)
 	{
+		$this->guardModelImplementation($model);
+
 		$this->repository->delete($model->getModel());
+	}
+
+	public function findById($id)
+	{
+		$where = [$this->modelMap->getPrimaryKey() => $id];
+		$this->repository->where($where);
+
+		$resultSet = $this->find();
+
+		if ($resultSet->hasResults()) {
+			return $resultSet->getFirstResult();
+		}
 	}
 
 	public function find()
@@ -44,21 +60,25 @@ class BaseRepository implements RepositoryAdapter
 		return $resultSet;
 	}
 
-	public function findById($id)
-	{
-		$resultSet = $this->repository->where([$this->modelMap->getPrimaryKey() => $id])->find();
-
-		$this->guardResultSet($resultSet);
-
-		if ($resultSet->hasResults()) {
-			return $resultSet->getFirstResult();
-		}
-	}
-
 	private function guardResultSet($resultSet)
 	{
 		if ( ! $resultSet instanceof ResultSet) {
-			throw new \Exception('ActiveRecord results must implement ResultSet interface');
+			throw new \Exception(sprintf(
+				'%s expects an instance of %s as results',
+				Repository::class,
+				ResultSet::class
+			));
+		}
+	}
+
+	private function guardModelImplementation($model)
+	{
+		if ( ! $model instanceof BaseModel) {
+			throw new \Exception(sprintf(
+				'%s expects an instance of %s to be used', 
+				BaseRepository::class,
+				BaseModel::class
+			));
 		}
 	}
 }

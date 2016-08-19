@@ -6,7 +6,7 @@ use \MolnApps\ActiveRecord\ActiveRecordTrait;
 use \MolnApps\ActiveRecord\ModelMapTrait;
 
 use \MolnApps\ActiveRecord\Contracts\ActiveRecord;
-use \MolnApps\ActiveRecord\Contracts\RepositoryAdapter;
+use \MolnApps\ActiveRecord\Contracts\Repository;
 use \MolnApps\ActiveRecord\Contracts\ModelMap;
 
 use \MolnApps\ActiveRecord\Testing\Populator\SetAccountId;
@@ -39,7 +39,7 @@ abstract class AbstractDomainObject implements AttributeCollector, ActiveRecord,
 		return $repository;
 	}
 
-	protected function bootRepository(RepositoryAdapter $repository)
+	protected function bootRepository(Repository $repository)
 	{
 		$repository->addPopulator('account', new SetAccountId);
 		$repository->addPopulator('author', new SetUserId);

@@ -2,7 +2,7 @@
 
 namespace MolnApps\ActiveRecord\Contracts;
 
-interface RepositoryAdapter
+interface Repository
 {
 	public function save(Model $model);
 	public function delete(Model $model);

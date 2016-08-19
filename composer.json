@@ -3,8 +3,8 @@
     "description": "ActiveRecord pattern implementation base logic",
     "authors": [
         {
-            "name": "***REMOVED***",
-            "email": "***REMOVED***"
+            "name": "MolnApps",
+            "email": "info@molnapps.com"
         }
     ],
     "minimum-stability": "stable",

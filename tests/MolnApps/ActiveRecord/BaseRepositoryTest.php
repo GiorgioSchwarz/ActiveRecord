@@ -2,16 +2,16 @@
 
 namespace MolnApps\ActiveRecord;
 
-use \MolnApps\ActiveRecord\Contracts\ModelMap;
+use \MolnApps\ActiveRecord\Contracts\Repository;
 use \MolnApps\ActiveRecord\Contracts\Model;
+use \MolnApps\ActiveRecord\Contracts\ModelMap;
 use \MolnApps\ActiveRecord\Contracts\ResultSet;
-use \MolnApps\ActiveRecord\Contracts\RepositoryAdapter as RepositoryInterface;
+
+use \MolnApps\ActiveRecord\BaseRepository;
+use \MolnApps\ActiveRecord\BaseModel;
 
 use \MolnApps\Repository\Repository as ConcreteRepository;
-use \MolnApps\Repository\Contracts\Model as RepositoryModel;
-
-use \MolnApps\ActiveRecord\Testing\Collection;
-use \MolnApps\ActiveRecord\Testing\Report;
+use \MolnApps\Repository\Contracts\Model as ConcreteModel;
 
 class BaseRepositoryTest extends \PHPUnit_Framework_TestCase
 {
@@ -22,16 +22,27 @@ class BaseRepositoryTest extends \PHPUnit_Framework_TestCase
 
 	protected function setUp()
 	{
+		$this->repository = $this->createRepository();
+
+		$this->createModelStub();
+	}
+
+	private function createRepository()
+	{
 		$this->concreteRepository = $this->createMock(ConcreteRepository::class);
 		
 		$this->modelMap = $this->createMock(ModelMap::class);
 		$this->modelMap->method('getPrimaryKey')->willReturn('id');
 
-		$this->repository = new BaseRepository($this->concreteRepository, $this->modelMap);
+		return new BaseRepository($this->concreteRepository, $this->modelMap);
+	}
 
-		$this->model = $this->createMock(Model::class);
-		$this->repositoryModel = $this->createMock(RepositoryModel::class);
-		$this->model->method('getModel')->willReturn($this->repositoryModel);
+	private function createModelStub()
+	{
+		$this->concreteModel = $this->createMock(ConcreteModel::class);
+
+		$this->model = $this->createMock(BaseModel::class);
+		$this->model->method('getModel')->willReturn($this->concreteModel);
 	}
 
 	/** @test */
@@ -43,7 +54,7 @@ class BaseRepositoryTest extends \PHPUnit_Framework_TestCase
 	/** @test */
 	public function it_implements_repository_interface()
 	{
-		$this->assertInstanceOf(RepositoryInterface::class, $this->repository);
+		$this->assertInstanceOf(Repository::class, $this->repository);
 	}
 
 	/** @test */
@@ -55,11 +66,27 @@ class BaseRepositoryTest extends \PHPUnit_Framework_TestCase
 	}
 
 	/** @test */
+	public function it_throws_if_model_to_save_is_not_instance_of_base_model()
+	{
+		$this->expectModelClassException();
+		
+		$this->repository->save($this->createMock(Model::class));
+	}
+
+	/** @test */
 	public function it_deletes_a_model_through_concrete_repository()
 	{
 		$this->repositoryExpectsDelete();
 		
 		$this->repository->delete($this->model);
+	}
+
+	/** @test */
+	public function it_throws_if_model_to_delete_is_not_instance_of_base_model()
+	{
+		$this->expectModelClassException();
+		
+		$this->repository->delete($this->createMock(Model::class));
 	}
 
 	/** @test */
@@ -81,10 +108,7 @@ class BaseRepositoryTest extends \PHPUnit_Framework_TestCase
 
 		$this->repositoryWillReturnArray($rows);
 		
-		$this->setExpectedException(
-			\Exception::class, 
-			'ActiveRecord results must implement ResultSet interface'
-		);
+		$this->expectResultSetException();
 
 		$collection = $this->repository->find();
 	}
@@ -110,10 +134,7 @@ class BaseRepositoryTest extends \PHPUnit_Framework_TestCase
 		$this->repositoryExpectsWhere(['id' => 11]);
 		$this->repositoryWillReturnArray($rows);
 		
-		$this->setExpectedException(
-			\Exception::class, 
-			'ActiveRecord results must implement ResultSet interface'
-		);
+		$this->expectResultSetException();
 
 		$collection = $this->repository->findById(11);
 	}
@@ -122,44 +143,34 @@ class BaseRepositoryTest extends \PHPUnit_Framework_TestCase
 
 	private function repositoryExpectsSave()
 	{
-		$this->concreteRepository
-			->expects($this->once())
-			->method('save')
-			->with($this->repositoryModel);
+		$this->repositoryExpects('save', $this->concreteModel);
 	}
 
 	private function repositoryExpectsDelete()
 	{
-		$this->concreteRepository
-			->expects($this->once())
-			->method('delete')
-			->with($this->repositoryModel);
+		$this->repositoryExpects('delete', $this->concreteModel);
 	}
 
 	private function repositoryExpectsWhere(array $where)
 	{
-		$this->concreteRepository
-			->expects($this->once())
-			->method('where')
-			->with($where)
-			->will($this->returnSelf());
+		$this->repositoryExpects('where', $where)	->will($this->returnSelf());
 	}
+
+	private function repositoryExpects($method, $with)
+	{
+		return $this->concreteRepository
+			->expects($this->once())
+			->method($method)
+			->with($with);
+	}
+
+	// ! Repository return methods
 
 	private function repositoryWillReturnResultSet(array $rows)
 	{
 		$resultSet = $this->createResultSet($rows);
 
 		return $this->repositoryWillReturn($resultSet);
-	}
-
-	private function createResultSet(array $rows)
-	{
-		$resultSet = $this->createMock(ResultSet::class);
-
-		$resultSet->method('getFirstResult')->willReturn((object)$rows[0]);
-		$resultSet->method('hasResults')->willReturn( !! count($rows[0]));
-
-		return $resultSet;
 	}
 
 	private function repositoryWillReturnArray(array $rows)
@@ -173,5 +184,33 @@ class BaseRepositoryTest extends \PHPUnit_Framework_TestCase
 			->expects($this->once())
 			->method('find')
 			->willReturn($willReturn);
+	}
+
+	private function createResultSet(array $rows)
+	{
+		$resultSet = $this->createMock(ResultSet::class);
+
+		$resultSet->method('getFirstResult')->willReturn((object)$rows[0]);
+		$resultSet->method('hasResults')->willReturn( !! count($rows[0]));
+
+		return $resultSet;
+	}
+
+	// ! Exception methods
+
+	private function expectModelClassException()
+	{
+		$this->setExpectedException(
+			\Exception::class, 
+			'MolnApps\ActiveRecord\BaseRepository expects an instance of MolnApps\ActiveRecord\BaseModel to be used'
+		);
+	}
+
+	private function expectResultSetException()
+	{
+		$this->setExpectedException(
+			\Exception::class, 
+			'MolnApps\ActiveRecord\Contracts\Repository expects an instance of MolnApps\ActiveRecord\Contracts\ResultSet as results'
+		);
 	}
 }
